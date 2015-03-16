@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.0.1"
+const VERSION = "0.0.2"
 
 type Destination struct {
 	Address string
@@ -91,6 +91,7 @@ func applyRules(data []byte, cfg *Config) [][]byte {
 	for _, p := range parseMessage(data) {
 		for _, r := range cfg.Rules {
 			if !r.in.Match(p.Key) {
+				packets = append(packets, []byte(fmt.Sprintf("%s:%s", p.Key, p.Body)))
 				continue
 			}
 			key := r.in.ReplaceAll(p.Key, []byte(r.Out))
