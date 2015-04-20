@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.0.3"
+const VERSION = "0.0.4"
 
 type Destination struct {
 	Address string
@@ -86,6 +86,13 @@ func processLoop(dataCh chan []byte, destAddress string, cfg *Config) {
 	}
 }
 
+func cleanTags(tags [][]byte) [][]byte {
+	for k, v := range tags {
+		tags[k] = bytes.Replace(v, []byte("#"), []byte("__"), -1)
+	}
+	return tags
+}
+
 func applyRules(data []byte, cfg *Config) [][]byte {
 	var packets [][]byte
 	for _, p := range parseMessage(data) {
@@ -99,7 +106,8 @@ func applyRules(data []byte, cfg *Config) [][]byte {
 			for _, tag := range r.Tags {
 				tags = append(tags, r.in.ReplaceAll(p.Key, []byte(tag)))
 			}
-			packets = append(packets, []byte(fmt.Sprintf("%s:%s|#%s", key, p.Body, bytes.Join(tags, []byte(",")))))
+			packets = append(packets, []byte(fmt.Sprintf("%s:%s|#%s", key, p.Body,
+				bytes.Join(cleanTags(tags), []byte(",")))))
 			found = true
 			break
 		}
