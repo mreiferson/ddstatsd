@@ -127,7 +127,7 @@ func udpListener(address string, dataCh chan []byte) {
 	}
 	defer listener.Close()
 
-	err = listener.SetReadBuffer(1024 * 1024)
+	err = listener.SetReadBuffer(2048 * 1024)
 	if err != nil {
 		log.Printf("ERROR: SetReadBuffer - %s", err)
 	}
