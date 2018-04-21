@@ -176,8 +176,6 @@ func main() {
 		rule.in = regexp.MustCompile(rule.In)
 	}
 
-	runtime.GOMAXPROCS(2)
-
 	signalchan := make(chan os.Signal, 1)
 	signal.Notify(signalchan, syscall.SIGTERM)
 
