@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const VERSION = "0.0.4"
+const VERSION = "0.0.5-alpha"
 
 type Destination struct {
 	Address string
@@ -118,7 +118,7 @@ func applyRules(data []byte, cfg *Config) [][]byte {
 	return packets
 }
 
-func udpListener(address string, dataCh chan []byte) {
+func udpListener(address string, udpReadBufferSize int, dataCh chan []byte) {
 	addr, _ := net.ResolveUDPAddr("udp", address)
 	log.Printf("listening on %s", addr)
 	listener, err := net.ListenUDP("udp", addr)
@@ -127,7 +127,7 @@ func udpListener(address string, dataCh chan []byte) {
 	}
 	defer listener.Close()
 
-	err = listener.SetReadBuffer(1024 * 1024)
+	err = listener.SetReadBuffer(udpReadBufferSize)
 	if err != nil {
 		log.Printf("ERROR: SetReadBuffer - %s", err)
 	}
@@ -151,6 +151,8 @@ func main() {
 		destAddress = flag.String("destination-address", ":8125", "UDP destination address")
 		config      = flag.String("config", "rules.cfg", "path to config file")
 		version     = flag.Bool("version", false, "print version")
+
+		udpReadBufferSize = flag.Int("udp-read-buffer-size", 1024*1024, "the buffer size to set on the incoming UDP socket")
 	)
 	flag.Parse()
 
@@ -174,12 +176,10 @@ func main() {
 		rule.in = regexp.MustCompile(rule.In)
 	}
 
-	runtime.GOMAXPROCS(2)
-
 	signalchan := make(chan os.Signal, 1)
 	signal.Notify(signalchan, syscall.SIGTERM)
 
 	dataCh := make(chan []byte, 1000)
-	go udpListener(*address, dataCh)
+	go udpListener(*address, *udpReadBufferSize, dataCh)
 	processLoop(dataCh, *destAddress, &cfg)
 }
