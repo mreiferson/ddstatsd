@@ -41,6 +41,7 @@ type Config struct {
 }
 
 var packetRegexp = regexp.MustCompile("^([^:]+):(.*)$")
+var verboseLogging = false
 
 func parseMessage(data []byte) []*Packet {
 	var output []*Packet
@@ -71,7 +72,9 @@ func processLoop(dataCh chan []byte, destAddress string, cfg *Config) {
 
 	for data := range dataCh {
 		for _, packet := range applyRules(data, cfg) {
-			log.Printf("out: %s", packet)
+			if verboseLogging {
+				log.Printf("out: %s", packet)
+			}
 			_, err = conn.Write([]byte(packet))
 			if err != nil {
 				log.Printf("ERROR: writing to UDP socket - %s", err)
@@ -139,8 +142,9 @@ func udpListener(address string, udpReadBufferSize int, dataCh chan []byte) {
 			log.Printf("ERROR: reading UDP packet from %+v - %s", remaddr, err)
 			continue
 		}
-
-		log.Printf("msg: %s (%d)", message[:n], n)
+		if verboseLogging {
+			log.Printf("msg: %s (%d)", message[:n], n)
+		}
 		dataCh <- message[:n]
 	}
 }
@@ -151,10 +155,13 @@ func main() {
 		destAddress = flag.String("destination-address", ":8125", "UDP destination address")
 		config      = flag.String("config", "rules.cfg", "path to config file")
 		version     = flag.Bool("version", false, "print version")
+		verbose     = flag.Bool("verbose", false, "print all output")
 
 		udpReadBufferSize = flag.Int("udp-read-buffer-size", 1024*1024, "the buffer size to set on the incoming UDP socket")
 	)
 	flag.Parse()
+
+	verboseLogging = *verbose
 
 	if *version {
 		fmt.Printf("ddstatsd v%s (built w/%s)\n", VERSION, runtime.Version())
